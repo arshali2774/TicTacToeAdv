@@ -10,10 +10,14 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 
-pub fn choose_player() -> io::Result<(Player, bool)> {
+pub fn end_menu(
+    winning_player: &Option<Player>,
+    human_player: &Player,
+    board: &[char; 9],
+) -> io::Result<bool> {
     let mut stdout = io::stdout();
 
-    let mut tabs = Tabs::new(vec![(17, 13, Player::X), (22, 13, Player::O)]);
+    let mut tabs = Tabs::new(vec![(16, 15, ("RESTART", true)), (17, 17, ("QUIT", false))]);
 
     loop {
         //clear screen
@@ -24,14 +28,39 @@ pub fn choose_player() -> io::Result<(Player, bool)> {
             SetForegroundColor(Color::Cyan),
         )?;
 
-        print_screen();
+        print_screen(&board);
+
+        let (statement, color) = match winning_player {
+            Some(winner) => {
+                if winner == human_player {
+                    ("YOU WIN!!", Color::Green)
+                } else {
+                    ("YOU LOSE!!", Color::Magenta)
+                }
+            }
+            None => ("IT'S A TIE!", Color::Yellow),
+        };
+
+        execute!(
+            stdout,
+            SetForegroundColor(color),
+            cursor::MoveTo(7, 3),
+            Print("+-----------------------+"),
+            cursor::MoveTo(7, 4),
+            Print("|                       |"),
+            cursor::MoveTo(7, 5),
+            Print("+-----------------------+"),
+            cursor::MoveTo(14, 4),
+            Print(statement),
+            ResetColor,
+        )?;
 
         // highlight selected tab
         execute!(
             stdout,
             cursor::MoveTo(tabs.position().0, tabs.position().1),
             SetBackgroundColor(Color::Red),
-            Print(tabs.value().char()),
+            Print(tabs.value().0),
             ResetColor,
             cursor::MoveTo(tabs.position().0, tabs.position().1),
         )?;
@@ -54,9 +83,9 @@ pub fn choose_player() -> io::Result<(Player, bool)> {
 
                 KeyCode::BackTab => tabs.prev(),
 
-                KeyCode::Enter => return Ok((tabs.value().clone(), true)),
+                KeyCode::Enter => return Ok(tabs.value().1),
 
-                KeyCode::Esc => return Ok((tabs.value().clone(), false)),
+                KeyCode::Esc => return Ok(false),
 
                 _ => continue,
             }
@@ -64,27 +93,29 @@ pub fn choose_player() -> io::Result<(Player, bool)> {
     }
 }
 
-fn print_screen() {
+fn print_screen(board: &[char; 9]) {
     println!(
         "
      \r    +-------- TIC TAC TOE ---------+
      \r    |                              |
-     \r    |  USE TAB/ARROWS TO MOVE      |
-     \r    |                              |
-     \r    |       ENTER TO SELECT        |
-     \r    |                              |
-     \r    |                              |
      \r    |  +-----------------------+   |
-     \r    |  |  CHOOSE YOUR PLAYER   |   |
+     \r    |  |                       |   |
      \r    |  +-----------------------+   |
      \r    |                              |
+     \r    |        +---+---+---+         |
+     \r    |        | {} | {} | {} |         |
+     \r    |        +---+---+---+         |
+     \r    |        | {} | {} | {} |         |
+     \r    |        +---+---+---+         |
+     \r    |        | {} | {} | {} |         |
+     \r    |        +---+---+---+         |
      \r    |                              |
-     \r    |           <X>  <O>           |
+     \r    |          <RESTART>           |
      \r    |                              |
-     \r    |                              |
-     \r    |  PRESS <ESC> TO QUIT GAME    |
+     \r    |           <QUIT>             |
      \r    |                              |
      \r    +------------------------------+
-     \n\r"
+     \n\r",
+        board[0], board[1], board[2], board[3], board[4], board[5], board[6], board[7], board[8]
     );
 }

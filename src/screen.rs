@@ -1,7 +1,11 @@
-// this is a module
-// we will be nesting different modules here
-
-// choose player module
 mod choose_player;
-// expose everything from choose_player module and make it public so that it can be used in main.rs
+
+mod game_play;
+
+mod end_menu;
+
 pub use choose_player::*;
+
+pub use game_play::*;
+
+pub use end_menu::*;
